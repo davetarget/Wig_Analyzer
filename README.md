@@ -2,9 +2,9 @@
 
 **Décompilateur et analyseur de cartouches Wherigo (`.gwc`)**, avec extraction automatique des coordonnées GPS, de l'inventaire, des médias, et désobfuscation du texte caché.
 
-[![Ouvrir l'application](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://99phezdzmgvak6kgpl2snj.streamlit.app)
+[![Ouvrir l'application](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://wiganalyzer.streamlit.app/)
 
-👉 **[Essayer l'application en ligne](https://99phezdzmgvak6kgpl2snj.streamlit.app)** — aucune installation nécessaire.
+👉 **[Essayer l'application en ligne](https://wiganalyzer.streamlit.app/)** — aucune installation nécessaire.
 
 ---
 
