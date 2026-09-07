@@ -13,7 +13,7 @@ import subprocess
 
 import streamlit as st
 
-from gwc_analyzer import run_analysis, GPS_PATTERNS
+from gwc_analyzer import run_analysis, GPS_PATTERNS, decimal_to_ddm
 
 IMAGE_EXTS = {"jpg", "jpeg", "png", "bmp", "gif"}
 AUDIO_EXTS = {"mp3", "wav", "ogg"}
@@ -81,14 +81,20 @@ def highlight_text(text, keywords_list):
     Les correspondances qui se chevauchent sont fusionnées, priorité aux
     motifs GPS (plus spécifiques), comme dans find_gps_matches.
     """
-    spans = []  # (start, end, css_class)
+    spans = []  # (start, end, css_class, conversion_or_None)
 
-    for pattern, _parser in GPS_PATTERNS:
+    for pattern, parser in GPS_PATTERNS:
         for m in pattern.finditer(text):
             start, end = m.span()
-            if any(start < e and s < end for s, e, _ in spans):
+            if any(start < e and s < end for s, e, _, _ in spans):
                 continue
-            spans.append((start, end, "gps"))
+            conversion = None
+            if parser:
+                try:
+                    conversion = parser(m)
+                except Exception:
+                    conversion = None
+            spans.append((start, end, "gps", conversion))
 
     for kw in keywords_list:
         kw = kw.strip()
@@ -97,9 +103,9 @@ def highlight_text(text, keywords_list):
         try:
             for m in re.finditer(re.escape(kw), text, re.IGNORECASE):
                 start, end = m.span()
-                if any(start < e and s < end for s, e, _ in spans):
+                if any(start < e and s < end for s, e, _, _ in spans):
                     continue
-                spans.append((start, end, "kw"))
+                spans.append((start, end, "kw", None))
         except re.error:
             continue
 
@@ -107,7 +113,7 @@ def highlight_text(text, keywords_list):
 
     out = []
     pos = 0
-    for start, end, css in spans:
+    for start, end, css, conversion in spans:
         if start < pos:
             continue
         out.append(html.escape(text[pos:start]))
@@ -116,6 +122,10 @@ def highlight_text(text, keywords_list):
             f'<mark style="background-color:{color};padding:0 2px;border-radius:3px;">'
             f"{html.escape(text[start:end])}</mark>"
         )
+        if css == "gps" and conversion:
+            out.append(
+                f' <span style="color:#4CAF50;font-style:italic;">→ {html.escape(conversion)}</span>'
+            )
         pos = end
     out.append(html.escape(text[pos:]))
     return "".join(out)
@@ -176,7 +186,35 @@ if launch and uploaded_file is not None:
 
         with tab_wp:
             if result["waypoints_table"]:
-                st.dataframe(result["waypoints_table"], use_container_width=True)
+                # Ajoute une colonne DDM (format geocaching : N 48° 12.345 E 002° 21.678),
+                # comme dans la version Tkinter d'origine.
+                wp_display = []
+                for wp in result["waypoints_table"]:
+                    row = dict(wp)
+                    try:
+                        row["ddm"] = decimal_to_ddm(wp["lat"], wp["lon"])
+                    except Exception:
+                        row["ddm"] = ""
+                    wp_display.append(row)
+
+                st.dataframe(
+                    wp_display,
+                    use_container_width=True,
+                    column_order=["line", "label", "name", "ddm", "alt"],
+                    column_config={
+                        "line": "Ligne",
+                        "label": "Label",
+                        "name": "Nom",
+                        "ddm": "Coordonnées (DDM)",
+                        "alt": "Altitude",
+                        "lat": None,  # masqué : on n'affiche que le DDM, comme dans la version Tkinter
+                        "lon": None,
+                    },
+                )
+                st.caption(
+                    "💡 Astuce : clique sur une cellule du tableau puis Ctrl+C (Cmd+C sur Mac) "
+                    "pour copier une coordonnée."
+                )
             else:
                 st.info("Aucun waypoint détecté.")
 
