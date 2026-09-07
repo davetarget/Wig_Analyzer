@@ -27,7 +27,7 @@ Toutes les coordonnées sont automatiquement converties et affichées au format 
 
 L'app est déployée gratuitement sur Streamlit Community Cloud :
 
-🔗 **https://99phezdzmgvak6kgpl2snj.streamlit.app**
+🔗 **https://wiganalyzer.streamlit.app/**
 
 1. Upload ton fichier `.gwc`
 2. (Optionnel) renseigne des mots-clés à rechercher
